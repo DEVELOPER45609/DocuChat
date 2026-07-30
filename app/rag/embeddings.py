@@ -1,1 +1,1 @@
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface_embedding import HuggingFaceEmbeddings
