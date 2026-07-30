@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.env
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Database / persistence
+*.sqlite3
+*.db
+chroma_db/
+
+# Uploads and runtime artifacts
+uploads/
+
+# Logs
+*.log
+
+# Uvicorn / FastAPI
+*.pid
