@@ -7,7 +7,7 @@ def get_embeddings():
     global _embeddings
     if _embeddings is None:
         _embeddings = HuggingFaceEmbeddings(
-            model_name=settings.EMBEDDINGS_MODEL_NAME,
-            model_kwargs={"device": settings.EMBEDDINGS_MODEL_DEVICE},
+            model_name=settings.EMBEDDING_MODEL_NAME,
+           
         )
     return _embeddings

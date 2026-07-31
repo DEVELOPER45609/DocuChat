@@ -5,7 +5,7 @@ from app.core.database import get_session
 from app.core.security import decode_access_token
 from app.models.users import User
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Depends(get_session)) -> User:
     credentials_exception = HTTPException(
@@ -19,7 +19,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Dep
     username: str = payload.get("sub")
     if username is None:
         raise credentials_exception
-    user = session.exec(select(User).where(User.username == username)).first()
+    user = session.exec(select(User).where(User.email == username)).first()
     if user is None:
         raise credentials_exception
     return user
