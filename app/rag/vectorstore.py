@@ -8,6 +8,7 @@ def get_vectorstore(user_id: str) -> Chroma:
         collection_name=collection_name,
         embedding_function=get_embeddings(),
         persist_directory=settings.CHROMA_PERSIST_DIR,
+        collection_metadata={"hnsw:space": "cosine"},
     )
     
  
