@@ -15,5 +15,6 @@ def chat(
         user_id=current_user.id,
         question=request.question,
         doc_id=request.doc_id,
+        chat_history=request.chat_history,
     )
     return result
