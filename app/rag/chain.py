@@ -73,23 +73,23 @@ def ask_question(question: str, user_id: str, doc_id: str | None = None, chat_hi
     filtered = [(doc, score) for doc, score in docs_and_scores if score >= SCORE_THRESHOLD]
 
     if not filtered:
-        return {
-            "answer": "This information is not found in the uploaded documents.",
-            "citations": [],
-        }
-
+        yield {"type": "token", "content": "This information is not found in the uploaded documents."}
+            
+        yield {"type": "citations", "citations": []}
+        return
+    
     chunks = [doc for doc, _ in filtered]
     context = format_context(chunks)
 
     chain = prompt | get_llm() | StrOutputParser()
-    response = chain.invoke({"context": context, "question": standalone_question})
+    for token in chain.stream({"context": context, "question": standalone_question}):
+        yield {"type": "token", "content": token}
+    
 
     citations = build_citations(chunks)
-
-    return {
-        "answer": response,
-        "citations": citations,
-    }
+    
+    yield {"type": "citations", "citations": citations}
+    
 
 
 
@@ -133,3 +133,38 @@ def ask_question(question: str, user_id: str, doc_id: str | None = None, chat_hi
 #   "answer": "...",
 #   "citations": [...]
 # }
+
+
+# User asks a question
+#         │
+#         ▼
+# condense_question()
+#         │
+#         ▼
+# Standalone question
+#         │
+#         ▼
+# Vector Search (Chroma)
+#         │
+#         ▼
+# Retrieved chunks + scores
+#         │
+#         ▼
+# Apply SCORE_THRESHOLD
+#         │
+#         ▼
+# Relevant chunks only
+#         │
+#         ▼
+# Create context
+#         │
+#         ▼
+# LLM generates answer
+#         │
+#         ▼
+# invoke()  → one complete response
+# or
+# stream() → token-by-token using yield
+#         │
+#         ▼
+# Return citation
