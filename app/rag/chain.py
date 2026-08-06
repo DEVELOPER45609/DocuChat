@@ -2,6 +2,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from app.rag.llm import get_llm
 from app.rag.vectorstore import get_vectorstore
+from typing import Generator
 
 SCORE_THRESHOLD = 0.3
 
@@ -23,12 +24,70 @@ Do not use any outside knowledge. Do not guess.
 Context:
 {context}
 """
+
+COMPARE_SYSTEM_PROMPT = """You are a document assistant. Compare the provided documents and answer ONLY using the context below.
+If the context does not contain the answer, reply exactly:
+"This information is not found in the uploaded documents."
+
+Do not use any outside knowledge. Do not guess.
+
+Context:
+{context}
+"""
+
+compare_prompt = ChatPromptTemplate.from_messages([
+    ("system", COMPARE_SYSTEM_PROMPT),
+    ("human", "{question}"),
+    
+])
+
 prompt = ChatPromptTemplate.from_messages(
     [
         ("system", SYSTEM_PROMPT),
         ("human", "{question}"),
     ]
 )
+
+def retrieve_for_doc_ids(question: str, user_id: str, doc_ids: list[str]) -> list:
+    vectorstore = get_vectorstore(user_id)
+    search_kwargs = {"k": 6, "filter": {"doc_id": {"$in": doc_ids}}}
+    docs_and_scores = vectorstore.similarity_search_with_relevance_scores(question, **search_kwargs)
+    print(f"RETRIEVED: {len(docs_and_scores)} chunks")
+    print("SCORES:", [round(s, 3) for _, s in docs_and_scores])
+    filtered = [(doc, score) for doc, score in docs_and_scores if score >= SCORE_THRESHOLD]
+    return [doc for doc, _ in filtered]
+
+def format_compare_context(doc_id_to_chunks: dict[str, list]) -> str:
+    """Har document ka apna labeled block banata hai, LLM ko clearly separate dikhane ke liye."""
+    blocks = []
+    for i, (doc_id, chunks) in enumerate(doc_id_to_chunks.items(), start=1):
+        label = f"Document {i} (ID: {doc_id})"
+        if chunks:
+            file_name = chunks[0].metadata.get("file_name", "Unknown")
+            body = format
+            blocks.append(f"=== {label} — {file_name} ===\n{body}")
+        else:
+            blocks.append(f"=== {label} ===\nNo relevant information found in this document.")
+    return "\n\n---\n\n".join(blocks)
+
+def compare_documents(question: str, user_id: str, doc_ids: list[str]) -> Generator[dict, None, None]:
+    all_chunks = []
+    doc_id_to_chunks = {}
+    for doc_id in doc_ids:
+     
+        chunks = retrieve_for_doc_ids(question, user_id, [doc_id])
+        doc_id_to_chunks[doc_id] = chunks
+        all_chunks.extend(chunks)
+    if not all_chunks:
+        yield {"type": "token", "content": "This information is not found in the uploaded documents."}
+        yield {"type": "citations", "citations": []}
+        return
+    context = format_compare_context(doc_id_to_chunks)
+    chain = compare_prompt | get_llm() | StrOutputParser()
+    for token in chain.stream({"context": context, "question": question}):
+        yield {"type": "token", "content": token}
+    citations = build_citations(all_chunks)
+    yield {"type": "citations", "citations": citations}
 
 def format_chat_history(chat_history: list[dict]) -> str:
     if not chat_history:
@@ -61,7 +120,7 @@ def build_citations(chunks) -> list[dict]:
         for c in chunks
     ]
 
-def ask_question(question: str, user_id: str, doc_id: str | None = None, chat_history: list= None) -> dict:
+def ask_question(question: str, user_id: str, doc_id: str | None = None, chat_history: list= None) -> Generator[dict, None, None]:
     standalone_question = condense_question(question, chat_history)
     vectorstore = get_vectorstore(user_id)
     search_kwargs = {"k": 6}

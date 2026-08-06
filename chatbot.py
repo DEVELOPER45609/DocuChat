@@ -1,12 +1,14 @@
 import requests
 import json
 
-TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmcmVzaEBleGFtcGxlLmNvbSIsImV4cCI6MTc4NTkxNzI3Nn0.gFwW-lC4X_nTmLaY8sFIPIdShRKTke7CAp2wPXwSLcE"
-
+TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmcmVzaEBleGFtcGxlLmNvbSIsImV4cCI6MTc4NjA5ODUxNX0.hJKXie6rKLs7-m2TnxkVaQZ_N3zxOwIQ0l9JNvMallQ"
 response = requests.post(
-    "http://127.0.0.1:8000/api/chat/",
+    "http://127.0.0.1:8000/api/chat/compare",
     headers={"Authorization": f"Bearer {TOKEN}"},   
-    json={"question": "What is this document about and what frameworks are using in it and give me detail overview and compare it with other frameworks and what should i learn to improve my resume?"},
+  json=  {
+    "question": "What technologies are mentioned?",
+    "doc_ids": ["55ed1aa8eb83d9e2efc3307133b76a90a91471f1cd2a1a6c2aac6f4f2c129c0d", "50254e8f2859554bc08f7e05ece277ecb707db6a98da6e6bf4ca32106fa2a53b"]
+  },
     stream=True,
 )
 

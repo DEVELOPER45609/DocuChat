@@ -17,3 +17,7 @@ class Citation(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     citations: list[Citation]    
+    
+class CompareRequest(BaseModel):
+    question: str
+    doc_ids: list[str]  # List of document IDs to compare    
