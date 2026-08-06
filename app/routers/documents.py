@@ -11,6 +11,8 @@ from app.models.users import User
 from app.rag.ingestion import ingest_document, compute_file_hash
 from app.schemas.document import DocumentRead
 from app.models.document import Document
+from app.rag.vectorstore import delete_document_chunks
+
 
 router = APIRouter(prefix="/api/documents", tags=["Documents"])
 
@@ -75,3 +77,25 @@ def list_documents(
 ):
     documents = session.exec(select(Document).where(Document.owner_id == current_user.id)).all()
     return documents
+
+@router.delete("/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_document(
+    doc_id: str,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    document = session.exec(
+        select(Document).where(Document.doc_id == doc_id, Document.owner_id == current_user.id)
+    ).first()
+
+    if not document:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    # Vectorstore se chunks delete karo
+    delete_document_chunks(current_user.id, doc_id)
+
+    # Database se document record delete karo
+    session.delete(document)
+    session.commit()
+
+    return {"detail": "Document deleted successfully"}
