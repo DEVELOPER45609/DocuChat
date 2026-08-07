@@ -10,3 +10,9 @@ class DocumentRead(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ChunkRead(BaseModel):
+    chunk_id: str
+    text: str
+    file_name: str
+    page: int

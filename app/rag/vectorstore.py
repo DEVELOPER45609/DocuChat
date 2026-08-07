@@ -17,3 +17,16 @@ def delete_document_chunks(user_id: int, doc_id: str):
     existing = vectorstore.get(where={"doc_id": doc_id})
     if existing and existing.get("ids"):
         vectorstore.delete(ids=existing["ids"])
+    
+def get_chunk_by_id(user_id: int, chunk_id: str):
+    vectorstore = get_vectorstore(user_id)
+    result = vectorstore.get(ids=[chunk_id], include=["documents", "metadatas"])
+
+    if not result or not result.get("ids"):
+        return None
+
+    return {
+        "chunk_id": result["ids"][0],
+        "text": result["documents"][0],
+        "metadata": result["metadatas"][0],
+    }

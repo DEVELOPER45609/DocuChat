@@ -9,9 +9,10 @@ from app.core.database import get_session
 from app.core.deps import get_current_user
 from app.models.users import User
 from app.rag.ingestion import ingest_document, compute_file_hash
-from app.schemas.document import DocumentRead
+from app.schemas.document import DocumentRead, ChunkRead
 from app.models.document import Document
-from app.rag.vectorstore import delete_document_chunks
+from app.rag.vectorstore import delete_document_chunks, get_chunk_by_id
+
 
 
 router = APIRouter(prefix="/api/documents", tags=["Documents"])
@@ -99,3 +100,21 @@ def delete_document(
     session.commit()
 
     return {"detail": "Document deleted successfully"}
+
+
+@router.get("/chunks/{chunk_id}", response_model=ChunkRead)
+def get_chunk(
+    chunk_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    chunk = get_chunk_by_id(current_user.id, chunk_id)
+
+    if chunk is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chunk not found")
+
+    return ChunkRead(
+        chunk_id=chunk["chunk_id"],
+        text=chunk["text"],
+        file_name=chunk["metadata"]["file_name"],
+        page=chunk["metadata"]["page"],
+    )
