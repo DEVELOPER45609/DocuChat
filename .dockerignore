@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+.env
+.git
+.gitignore
+docuchat.db
+docuchat.sqbpro
+uploads/
+chroma_db/
+.pytest_cache/
+tests/
+chatbot.py
